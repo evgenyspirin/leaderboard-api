@@ -1,0 +1,208 @@
+openapi: 3.0.3
+info:
+  title: Events API
+  version: 1.0.0
+  description: API for receiving events, leaderboards, and talent rankings.
+servers:
+  - url: https://api.example.com
+paths:
+  /events:
+    post:
+      summary: Event reception
+      description: Returns **202 Accepted** if the event is accepted for processing; **200 OK** if it is a duplicate of an event that has already been accepted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventIn'
+            example:
+              event_id: "8c1b7c3e-3b1f-4a19-9d49-0f5f0d1c9a11"
+              talent_id: "tt-123"
+              raw_metric: 37.5
+              skill: "dribble"
+              ts: "2025-08-28T09:15:00Z"
+      responses:
+        '202':
+          description: Accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ack'
+              example:
+                status: accepted
+        '200':
+          description: Duplicate event (already processed/accepted previously)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ack'
+              example:
+                status: duplicate
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /leaderboard:
+    get:
+      summary: Leaders table
+      parameters:
+        - name: limit
+          in: query
+          description: Number of records in response
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          example: 3
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaderboardEntry'
+              example:
+                - rank: 1
+                  talent_id: "t-123"
+                  score: 112.5
+                - rank: 2
+                  talent_id: "t-777"
+                  score: 98.0
+                - rank: 3
+                  talent_id: "t-555"
+                  score: 91.2
+        '400':
+          description: Invalid limit parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /rank/{talent_id}:
+    get:
+      summary: Rank for a specific talent
+      parameters:
+        - name: talent_id
+          in: path
+          required: true
+          description: Talent ID
+          schema:
+            type: string
+          example: "t-123"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RankResponse'
+              example:
+                rank: 1
+                talent_id: "t-123"
+                score: 112.5
+        '404':
+          description: Talent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /seed:
+    get:
+      summary: An extra endpoit to real seeding of random Leaders
+      parameters:
+        - name: count
+          in: query
+          description: Count of Leaders to create
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+          example: 3
+      responses:
+        '200':
+          description: The operation was successful, the database is filled.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Database seeded successfully with 1000 records"
+
+components:
+  schemas:
+    EventIn:
+      type: object
+      required: [event_id, talent_id, raw_metric, skill, ts]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+          description: UUID events
+          example: "8c1b7c3e-3b1f-4a19-9d49-0f5f0d1c9a11"
+        talent_id:
+          type: string
+          description: Talent ID
+          example: "tt-123"
+        raw_metric:
+          type: number
+          format: float
+          description: Raw metric
+          example: 37.5
+        skill:
+          type: string
+          description: Skill
+          example: "dribble"
+        ts:
+          type: string
+          format: date-time
+          description: Event time (RFC3339, UTC preferred)
+          example: "2025-08-28T09:15:00Z"
+    LeaderboardEntry:
+      type: object
+      required: [rank, talent_id, score]
+      properties:
+        rank:
+          type: integer
+          minimum: 1
+          description: Position in the ranking
+        talent_id:
+          type: string
+          description: Talent ID
+        score:
+          type: number
+          format: float
+          description: Points scored
+    RankResponse:
+      type: object
+      required: [rank, talent_id, score]
+      properties:
+        rank:
+          type: integer
+          minimum: 1
+        talent_id:
+          type: string
+        score:
+          type: number
+          format: float
+    Ack:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Processing status (accepted/duplicate)
+          enum: [accepted, duplicate]
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]

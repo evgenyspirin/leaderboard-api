@@ -1,0 +1,44 @@
+@baseUrl = http://localhost:8080
+@talentId = t-123
+@eventId = 8c1b7c3e-3b1f-4a19-9d49-0f5f0d1c9a11
+@skill = dribble
+@raw = 37.5
+@ts = 2025-08-28T09:15:00Z
+
+### 1) POST /events — first send (202 Accepted)
+POST {{baseUrl}}/events
+Content-Type: application/json
+Accept: application/json
+
+{
+  "event_id": "{{eventId}}",
+  "talent_id": "{{talentId}}",
+  "raw_metric": {{raw}},
+  "skill": "{{skill}}",
+  "ts": "{{ts}}"
+}
+
+### 1b) POST /events — retry (duplicat, 200 OK)
+POST {{baseUrl}}/events
+Content-Type: application/json
+Accept: application/json
+
+{
+  "event_id": "{{eventId}}",
+  "talent_id": "{{talentId}}",
+  "raw_metric": {{raw}},
+  "skill": "{{skill}}",
+  "ts": "{{ts}}"
+}
+
+### 2) GET /leaderboard?limit=15
+GET {{baseUrl}}/leaderboard?limit=15
+Accept: application/json
+
+### 3) GET /rank/{talent_id}
+GET {{baseUrl}}/rank/{{talentId}}
+Accept: application/json
+
+### 4) GET /seed?count=100
+GET {{baseUrl}}/seed?count=100
+Accept: application/json
